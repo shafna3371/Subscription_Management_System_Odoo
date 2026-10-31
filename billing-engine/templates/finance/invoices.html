@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Invoices</h1><p>{{ '{:,}'.format(total) }} matching · {{ owed|money }} still owed on these.</p></div></div>
+<form class="filters" method="get">
+  <input type="search" name="q" value="{{ args.get('q','') }}" placeholder="Invoice number or customer" aria-label="Search">
+  <select name="status" aria-label="Status"><option value="">All</option>
+    {% for v, label in [('outstanding','Outstanding'),('overdue','Overdue'),('draft','Draft'),('paid','Paid'),('cancelled','Cancelled')] %}
+    <option value="{{ v }}" {% if args.get('status') == v %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <button class="btn">Filter</button>{% if args %}<a href="{{ url_for('finance.invoices') }}" class="small">Clear</a>{% endif %}
+</form>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Owed</th><th>Late-payment risk</th></tr></thead>
+  <tbody>{% for i in rows %}<tr>
+    <td><a href="{{ url_for('finance.invoice', inv_id=i.id) }}">{{ i.number }}</a></td><td>{{ i.customer_name }}</td>
+    <td class="small">{{ i.invoice_date }}</td><td class="small">{{ i.due_date }}</td>
+    <td>{{ m.status(i.status, i.due_date, now) }}{% if i.anomaly_flag %} <span class="badge risk">Review</span>{% endif %}</td>
+    <td class="num">{{ i.total|money }}</td><td class="num">{{ (i.total - i.amount_paid)|money if i.status == 'confirmed' else '-' }}</td>
+    <td>{{ m.risk(i.late_risk) if i.status == 'confirmed' else '' }}</td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No invoices match these filters.</td></tr>{% endfor %}</tbody>
+</table></div>{{ m.pager(page, pages, 'finance.invoices', args) }}</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Review before sending{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Review before sending</h1><p>New invoices that look unusual are held here instead of going to the customer.</p></div></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th class="num">Total</th><th>Why it was held</th></tr></thead>
+  <tbody>{% for i in rows %}<tr><td><a href="{{ url_for('finance.invoice', inv_id=i.id) }}">{{ i.number }}</a></td><td>{{ i.customer_name }}</td>
+    <td class="small">{{ i.invoice_date }}</td><td class="num">{{ i.total|money }}</td>
+    <td>{% for r in from_json(i.anomaly_reasons) %}<span class="reason">{{ r }}</span>{% endfor %}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">Nothing to review. Every new invoice looked normal and went out automatically.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

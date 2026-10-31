@@ -1,0 +1,16 @@
+Member C: Database schema, billing engine, invoices, taxes, discounts, payments, reconciliation, CLI
+
+Unzip this into the ROOT of your cloned repository (it already contains the folders).
+
+Your files (11):
+  loopline/billing.py
+  loopline/cli.py
+  loopline/db.py
+  loopline/views/finance.py
+  templates/finance/discounts.html
+  templates/finance/invoice.html
+  templates/finance/invoices.html
+  templates/finance/payments.html
+  templates/finance/print.html
+  templates/finance/reconcile.html
+  templates/finance/review.html

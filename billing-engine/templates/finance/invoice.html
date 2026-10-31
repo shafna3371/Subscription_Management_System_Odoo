@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}{{ inv.number }}{% endblock %}
+{% block content %}
+{% macro act(name, label, cls='', confirm=None) -%}
+<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="{{ name }}">
+  <button class="btn {{ cls }}" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>{{ label }}</button></form>
+{%- endmacro %}
+{% set owed = inv.total - inv.amount_paid %}
+<div class="page-head">
+  <div><h1>{{ inv.number }} {{ m.status(inv.status, inv.due_date, today.isoformat()) }}</h1>
+    <p>{{ inv.customer_name }} · <a href="{{ url_for('subs.detail', sub_id=inv.subscription_id) }}">{{ inv.sub_number }}</a> · period {{ inv.period_start }} to {{ inv.period_end }}</p></div>
+  <div class="actions">
+    {% if inv.status == 'draft' %}{{ act('confirm', 'Confirm', 'primary') }}{% endif %}
+    {% if inv.status in ('confirmed','paid') %}{{ act('send', 'Send again' if inv.sent_at else 'Send') }}{% endif %}
+    <a class="btn" href="{{ url_for('finance.print_invoice', inv_id=inv.id) }}" target="_blank" rel="noopener">Print</a>
+    {% if inv.status in ('draft','confirmed') and inv.amount_paid == 0 %}{{ act('cancel', 'Cancel', 'danger', 'Cancel this invoice? Its period will not be billed again.') }}{% endif %}
+  </div>
+</div>
+{% if inv.anomaly_flag %}<div class="flash error"><strong>Held for review.</strong> The anomaly guard stopped this invoice before it was sent:
+  {% for r in from_json(inv.anomaly_reasons) %}<span class="reason">{{ r }}</span>{% endfor %}
+  <div class="small" style="margin-top:6px">Fix the subscription lines and cancel this draft, or confirm it if it is correct.</div></div>{% endif %}
+<div class="grid-3">
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Discount</th><th class="num">Tax</th><th class="num">Amount</th></tr></thead>
+  <tbody>{% for l in lines %}<tr><td>{{ l.description }}</td><td class="num">{{ l.quantity }}</td><td class="num">{{ l.unit_price|money }}</td>
+    <td class="num">{{ ('-' ~ l.discount|money) if l.discount else '' }}</td><td class="num">{{ l.tax_amount|money }} <span class="muted small">({{ l.tax_rate|round(2) }}%)</span></td>
+    <td class="num">{{ l.amount|money }}</td></tr>{% endfor %}</tbody>
+  <tfoot>
+    <tr><td colspan="5">Subtotal</td><td class="num">{{ inv.subtotal|money }}</td></tr>
+    {% for dsc in discounts %}<tr><td colspan="5" class="muted">{{ dsc.name }}</td><td class="num">-{{ dsc.amount|money }}</td></tr>{% endfor %}
+    <tr><td colspan="5">Tax</td><td class="num">{{ inv.tax_total|money }}</td></tr>
+    <tr><td colspan="5">Total</td><td class="num">{{ inv.total|money }}</td></tr>
+    <tr><td colspan="5">Paid</td><td class="num">{{ inv.amount_paid|money }}</td></tr>
+  </tfoot>
+</table></div></div>
+<div>
+  <div class="panel"><h2>Dates</h2><p class="small">Invoiced {{ inv.invoice_date }} · due {{ inv.due_date }}{% if inv.paid_date %} · paid {{ inv.paid_date }}{% endif %}{% if inv.sent_at %} · sent {{ inv.sent_at }}{% endif %}</p>
+    {% if late and inv.status == 'confirmed' %}<p class="small"><strong>Late-payment risk</strong> {{ m.risk(late.score) }}</p>
+      {% for r in from_json(late.reasons) %}<span class="reason calm">{{ r }}</span>{% endfor %}{% endif %}
+    {% if reminders %}<h3 style="margin-top:12px">Reminders sent</h3><ul class="timeline">{% for r in reminders %}<li><time>{{ r.sent_on }}</time>{{ ['Smart pre-due nudge','Day 1 reminder','Day 7 reminder','Final notice'][r.level] }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% if inv.status == 'confirmed' %}
+  <div class="panel"><h2>Record a payment</h2>
+    <form method="post">{{ m.csrf() }}<input type="hidden" name="action" value="pay">
+      <div class="form-grid">
+      <div class="field"><label for="amount">Amount</label><input id="amount" name="amount" type="number" step="0.01" min="0.01" max="{{ owed|round(2) }}" value="{{ owed|round(2) }}" required></div>
+      <div class="field"><label for="method">Method</label><select id="method" name="method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" max="{{ today }}" value="{{ today }}" required></div>
+      <div class="field"><label for="note">Note</label><input id="note" name="note" maxlength="300" placeholder="Bank reference"></div>
+      </div><p style="margin-top:12px"><button class="btn primary">Record payment</button></p></form></div>
+  {% endif %}
+  {% if payments %}<div class="panel panel-flush"><h2>Payments</h2><div class="table-wrap"><table><tbody>
+    {% for p in payments %}<tr><td class="small">{{ p.date }}</td><td>{{ methods[p.method] }}<div class="small muted">{{ p.note or '' }}</div></td><td class="num">{{ p.amount|money }}</td></tr>{% endfor %}
+  </tbody></table></div></div>{% endif %}
+</div></div>
+{% endblock %}

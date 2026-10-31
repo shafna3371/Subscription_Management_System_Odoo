@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ inv.number }}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body style="background:#eef0f3">
+<div class="no-print" style="text-align:center;padding:12px"><button class="btn primary" onclick="window.print()">Print or save as PDF</button></div>
+<div class="invoice-doc">
+  <div style="display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap">
+    <div><strong style="font-size:1.3rem">Brightloop Software</strong><div class="small" style="color:#555">Recurring software for growing businesses</div></div>
+    <div style="text-align:right"><div style="font-size:1.4rem;font-weight:700">Invoice</div><div>{{ inv.number }}</div>
+      <div class="small" style="color:#555">Status: {{ inv.status|capitalize }}</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:24px;margin:28px 0;flex-wrap:wrap">
+    <div><div class="small" style="color:#555">Billed to</div><strong>{{ inv.customer_name }}</strong><br>{{ inv.company or '' }}<br>{{ inv.customer_email }}</div>
+    <div class="small" style="text-align:right">Invoice date: {{ inv.invoice_date }}<br>Due date: {{ inv.due_date }}<br>Subscription: {{ inv.sub_number }}<br>Period: {{ inv.period_start }} to {{ inv.period_end }}</div>
+  </div>
+  <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Discount</th><th class="num">Tax</th><th class="num">Amount</th></tr></thead>
+  <tbody>{% for l in lines %}<tr><td>{{ l.description }}</td><td class="num">{{ l.quantity }}</td><td class="num">{{ l.unit_price|money }}</td>
+    <td class="num">{{ l.discount|money }}</td><td class="num">{{ l.tax_amount|money }} ({{ l.tax_rate|round(2) }}%)</td><td class="num">{{ l.amount|money }}</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><td colspan="5">Subtotal</td><td class="num">{{ inv.subtotal|money }}</td></tr>
+    <tr><td colspan="5">Discounts</td><td class="num">-{{ inv.discount_total|money }}</td></tr>
+    <tr><td colspan="5">Tax</td><td class="num">{{ inv.tax_total|money }}</td></tr>
+    <tr><td colspan="5">Total</td><td class="num">{{ inv.total|money }}</td></tr>
+    <tr><td colspan="5">Amount due</td><td class="num">{{ (inv.total - inv.amount_paid)|money }}</td></tr></tfoot></table>
+  <p class="small" style="color:#555;margin-top:28px">Please quote {{ inv.number }} with your payment.</p>
+</div></body></html>

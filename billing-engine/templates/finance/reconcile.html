@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Bank reconciliation{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Bank reconciliation</h1><p>Upload a bank statement and approve the suggested matches. Every correction teaches the matcher.</p></div>
+  <a class="btn" href="{{ url_for('finance.sample_csv') }}">Download a sample statement</a></div>
+<div class="panel"><form method="post" enctype="multipart/form-data" class="actions">{{ m.csrf() }}<input type="hidden" name="action" value="upload">
+  <input type="file" name="file" accept=".csv" required aria-label="Bank statement CSV" style="max-width:340px">
+  <button class="btn primary">Upload and match</button>
+  <span class="small muted">CSV columns: date, amount, reference, payer</span></form>
+  {% if card %}<p class="small muted" style="margin-top:10px;margin-bottom:0">Matcher: {{ card.metric }}.</p>{% endif %}</div>
+{% if lines %}
+<div class="panel panel-flush">
+  <div class="actions" style="padding:14px 16px;justify-content:space-between"><h2 style="margin:0">{{ lines|length }} lines to review</h2>
+    <form method="post">{{ m.csrf() }}<input type="hidden" name="action" value="approve_confident"><button class="btn">Approve all matches at 85% or more</button></form></div>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Bank line</th><th>Suggested invoice</th><th>Confidence</th><th>Decide</th></tr></thead>
+  <tbody>{% for l in lines %}<tr>
+    <td><strong class="num">{{ l.amount|money }}</strong> · {{ l.date }}<div class="small muted">{{ l.payer or 'No payer' }} · {{ l.reference or 'No reference' }}</div></td>
+    <td>{% if l.number %}{{ l.number }}<div class="small muted">{{ l.customer_name }} · owes {{ l.outstanding|money }}</div>{% else %}<span class="muted">No likely invoice</span>{% endif %}</td>
+    <td>{% if l.confidence is not none %}<span class="badge {{ 'active' if l.confidence >= 0.85 else 'confirmed' if l.confidence >= 0.6 else 'risk' }}">{{ (l.confidence * 100)|round|int }}%</span>{% endif %}</td>
+    <td><div class="actions">
+      {% if l.suggested_invoice %}<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="approve"><input type="hidden" name="line_id" value="{{ l.id }}"><button class="btn small primary">Approve</button></form>{% endif %}
+      <form method="post" class="inline actions">{{ m.csrf() }}<input type="hidden" name="action" value="choose"><input type="hidden" name="line_id" value="{{ l.id }}">
+        <select name="invoice_id" aria-label="Choose invoice" style="width:200px;min-height:28px;padding:2px 6px"><option value="">Pick another invoice</option>
+        {% for i in open_invoices %}<option value="{{ i.id }}">{{ i.number }} · {{ i.name }} · {{ i.owed|money }}</option>{% endfor %}</select>
+        <button class="btn small">Match</button></form>
+      <form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="ignore"><input type="hidden" name="line_id" value="{{ l.id }}"><button class="btn small">Ignore</button></form>
+    </div></td></tr>{% endfor %}</tbody>
+  </table></div></div>
+{% else %}
+<div class="panel empty">No bank lines waiting. Upload a statement, or download the sample to try it.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Discounts{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Discounts</h1><p>Matching discounts land on the next invoice automatically and stop when they expire or run out.</p></div></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Value</th><th>Applies to</th><th>Conditions</th><th>Dates</th><th class="num">Used</th><th class="num">Given</th><th></th></tr></thead>
+  <tbody>{% for x in rows %}{% set expired = x.end_date and x.end_date < today.isoformat() %}
+  <tr><td>{{ x.name }}<div class="small muted">{{ 'Everyone who qualifies' if x.audience == 'all' else 'Assigned offers only' }}</div></td>
+    <td>{{ (x.value|round(2)) ~ '%' if x.kind == 'percent' else x.value|money ~ ' off' }}</td>
+    <td>{{ x.product_name or 'Whole subscription' }}</td>
+    <td class="small">{% if x.min_qty %}Qty {{ x.min_qty }}+ {% endif %}{% if x.min_purchase %}Spend {{ x.min_purchase|money }}+{% endif %}{% if not x.min_qty and not x.min_purchase %}None{% endif %}</td>
+    <td class="small">{{ x.start_date }} to {{ x.end_date or 'open' }}</td>
+    <td class="num">{{ x.used_count }}{% if x.usage_limit %} / {{ x.usage_limit }}{% endif %}</td><td class="num">{{ x.given|money }}</td>
+    <td>{% if not x.active %}<span class="badge">Off</span>{% elif expired %}<span class="badge">Expired</span>{% elif x.usage_limit and x.used_count >= x.usage_limit %}<span class="badge">Used up</span>{% else %}<span class="badge active">Live</span>{% endif %}
+      {% if current_user.role == 'admin' %}<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="{{ x.id }}">
+        <button class="btn small">{{ 'Turn off' if x.active else 'Turn on' }}</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No discount rules yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% if current_user.role == 'admin' %}
+<div class="panel"><h2>Create a discount rule</h2><p class="small muted">Only admins can create discounts.</p>
+<form method="post" class="form-grid">{{ m.csrf() }}
+  <div class="field"><label for="name">Name</label><input id="name" name="name" required maxlength="80" value="{{ form.get('name','') }}"></div>
+  <div class="field"><label for="kind">Type</label><select id="kind" name="kind"><option value="percent">Percentage</option><option value="fixed">Fixed amount</option></select></div>
+  <div class="field"><label for="value">Value</label><input id="value" name="value" type="number" min="0.01" step="0.01" required></div>
+  <div class="field"><label for="product_id">Applies to</label><select id="product_id" name="product_id"><option value="">Whole subscription</option>
+    {% for p in products %}<option value="{{ p.id }}">{{ p.name }} only</option>{% endfor %}</select></div>
+  <div class="field"><label for="min_qty">Minimum quantity</label><input id="min_qty" name="min_qty" type="number" min="0" step="1" value="0"></div>
+  <div class="field"><label for="min_purchase">Minimum purchase</label><input id="min_purchase" name="min_purchase" type="number" min="0" step="0.01" value="0"></div>
+  <div class="field"><label for="start_date">Start date</label><input id="start_date" name="start_date" type="date" value="{{ today }}" required></div>
+  <div class="field"><label for="end_date">End date</label><input id="end_date" name="end_date" type="date"></div>
+  <div class="field"><label for="usage_limit">Usage limit</label><input id="usage_limit" name="usage_limit" type="number" min="1" step="1"><div class="hint">Empty means unlimited.</div></div>
+  <div class="field"><label for="audience">Who gets it</label><select id="audience" name="audience"><option value="all">Everyone who qualifies</option><option value="assigned">Only when staff assign it (retention offers)</option></select></div>
+  <div><button class="btn primary">Create discount</button></div>
+</form></div>
+{% endif %}
+{% endblock %}

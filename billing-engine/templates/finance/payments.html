@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Payments</h1><p>Every payment, recorded against an invoice. Record new ones from the invoice or bank reconciliation.</p></div>
+  <a class="btn" href="{{ url_for('finance.reconcile') }}">Bank reconciliation</a></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Method</th><th>Note</th><th class="num">Amount</th></tr></thead>
+  <tbody>{% for p in rows %}<tr><td class="small">{{ p.date }}</td><td><a href="{{ url_for('finance.invoice', inv_id=p.invoice_id) }}">{{ p.number }}</a></td>
+    <td>{{ p.customer_name }}</td><td>{{ methods[p.method] }}</td><td class="small muted">{{ p.note or '' }}</td><td class="num">{{ p.amount|money }}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">No payments yet.</td></tr>{% endfor %}</tbody>
+</table></div>{{ m.pager(page, pages, 'finance.payments', args) }}</div>
+{% endblock %}
