@@ -1,0 +1,8 @@
+<div class="field"><label for="name">Name</label><input id="name" name="name" required maxlength="80" value="{{ p.name if p else form.get('name','') }}"></div>
+<div class="field"><label for="type">Type</label><select id="type" name="type">
+  {% for t in types %}<option value="{{ t }}" {% if (p and p.type == t) or (not p and form.get('type') == t) %}selected{% endif %}>{{ t|capitalize }}</option>{% endfor %}</select></div>
+<div class="field"><label for="sales_price">Sales price</label><input id="sales_price" name="sales_price" type="number" min="0" step="0.01" required value="{{ p.sales_price if p else form.get('sales_price','') }}"></div>
+<div class="field"><label for="cost_price">Cost price</label><input id="cost_price" name="cost_price" type="number" min="0" step="0.01" required value="{{ p.cost_price if p else form.get('cost_price','') }}"></div>
+<div class="field"><label for="tax_id">Tax</label><select id="tax_id" name="tax_id"><option value="">No tax</option>
+  {% for t in taxes %}<option value="{{ t.id }}" {% if p and p.tax_id == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></div>
+<div class="field" style="grid-column: 1 / -1"><label for="notes">Notes</label><textarea id="notes" name="notes" rows="2" maxlength="1000">{{ p.notes if p and p.notes else form.get('notes','') }}</textarea></div>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Plans{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Plans</h1><p>What each subscription costs, how often it bills and which actions it allows.</p></div></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Plan</th><th>Product</th><th class="num">Price</th><th>Bills</th><th class="num">Min qty</th><th>Available</th><th>Rules</th><th class="num">Active</th></tr></thead>
+  <tbody>{% for p in plans %}<tr>
+    <td>{% if current_user.role == 'admin' %}<a href="{{ url_for('catalog.plan', plan_id=p.id) }}">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}</td>
+    <td>{{ p.product_name }}</td><td class="num">{{ p.price|money }}</td><td>{{ p.billing_period|capitalize }}</td><td class="num">{{ p.min_qty }}</td>
+    <td class="small">{{ p.start_date }} to {{ p.end_date or 'open' }}</td>
+    <td class="small">{% for key, label in [('auto_close','Auto-close'),('closable','Close'),('pausable','Pause'),('renewable','Renew')] %}{% if p[key] %}<span class="badge">{{ label }}</span> {% endif %}{% endfor %}</td>
+    <td class="num">{{ p.active }}</td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No plans yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% if current_user.role == 'admin' %}
+<div class="panel"><h2>Create a plan</h2>{% set plan = None %}
+  <form method="post" class="form-grid">{{ m.csrf() }}{% include "catalog/_plan_fields.html" %}
+    <div><button class="btn primary">Create plan</button></div></form></div>
+{% endif %}
+{% endblock %}

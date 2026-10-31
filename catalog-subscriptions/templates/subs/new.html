@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}New subscription{% endblock %}
+{% block content %}
+{% set chosen_tpl = form.get('template_id') or request.args.get('template', '') %}
+<div class="page-head"><div><h1>New subscription</h1><p>Start from a quotation template, or pick a plan and add lines after.</p></div></div>
+<div class="panel"><form method="post" class="form-grid">{{ m.csrf() }}
+  <div class="field"><label for="customer_id">Customer</label><select id="customer_id" name="customer_id" required><option value="">Choose a customer</option>
+    {% for c in customers %}<option value="{{ c.id }}" {% if form.get('customer_id') == c.id|string %}selected{% endif %}>{{ c.name }}{% if c.company %} ({{ c.company }}){% endif %}</option>{% endfor %}</select>
+    <div class="hint">Customers create their own accounts at sign-up.</div></div>
+  <div class="field"><label for="template_id">Quotation template</label><select id="template_id" name="template_id"><option value="">No template</option>
+    {% for t in templates %}<option value="{{ t.id }}" {% if chosen_tpl == t.id|string %}selected{% endif %}>{{ t.name }} ({{ t.plan_name }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="plan_id">Plan</label><select id="plan_id" name="plan_id"><option value="">Choose a plan</option>
+    {% for p in plans %}<option value="{{ p.id }}" {% if form.get('plan_id') == p.id|string %}selected{% endif %}>{{ p.name }} · {{ p.price|money }} / {{ p.billing_period }}</option>{% endfor %}</select>
+    <div class="hint">Pick a plan, or start from a template.</div></div>
+  <div class="field"><label for="start_date">Start date</label><input id="start_date" name="start_date" type="date" required value="{{ form.get('start_date', now.isoformat()) }}"></div>
+  <div class="field"><label for="term_periods">Contract length (billing periods)</label><input id="term_periods" name="term_periods" type="number" min="1" max="120" value="{{ form.get('term_periods','') }}">
+    <div class="hint">Empty means it runs until closed.</div></div>
+  <div class="field"><label for="payment_terms_days">Payment terms (days)</label><select id="payment_terms_days" name="payment_terms_days">
+    {% for t in [0, 7, 15, 30, 45] %}<option value="{{ t }}" {% if t == 15 %}selected{% endif %}>{{ 'Due on receipt' if t == 0 else t ~ ' days' }}</option>{% endfor %}</select></div>
+  <div class="field"><div class="checks"><label><input type="checkbox" name="auto_renew" value="1"> Renew automatically at the end date</label></div></div>
+  <div><button class="btn primary">Create draft</button></div>
+</form></div>
+{% endblock %}

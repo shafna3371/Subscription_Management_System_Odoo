@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Quotation templates{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Quotation templates</h1><p>Ready-made offers with the right plan and product lines, so sales never starts from scratch.</p></div></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Template</th><th>Plan</th><th class="num">Lines</th><th class="num">Valid for</th><th class="num">Contract</th></tr></thead>
+  <tbody>{% for t in templates %}<tr><td><a href="{{ url_for('catalog.template', template_id=t.id) }}">{{ t.name }}</a></td>
+    <td>{{ t.plan_name }}</td><td class="num">{{ t.lines }}</td><td class="num">{{ t.validity_days }} days</td>
+    <td class="num">{{ t.term_periods }} × {{ {'daily':'day','weekly':'week','monthly':'month','yearly':'year'}[t.billing_period] }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">No templates yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% if current_user.role == 'admin' %}
+<div class="panel"><h2>Create a template</h2>
+  <form method="post" class="form-grid">{{ m.csrf() }}
+    <div class="field"><label for="name">Template name</label><input id="name" name="name" required maxlength="80"></div>
+    <div class="field"><label for="plan_id">Plan</label><select id="plan_id" name="plan_id" required><option value="">Choose a plan</option>
+      {% for p in plans %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="validity_days">Quotation valid for (days)</label><input id="validity_days" name="validity_days" type="number" min="1" max="365" value="30" required></div>
+    <div class="field"><label for="term_periods">Contract length (billing periods)</label><input id="term_periods" name="term_periods" type="number" min="1" max="120" value="12" required></div>
+    <div><button class="btn primary">Create template</button></div></form></div>
+{% endif %}
+{% endblock %}

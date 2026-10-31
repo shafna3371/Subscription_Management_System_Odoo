@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}{{ t.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ t.name }}</h1><p>{{ t.plan_name }} · valid {{ t.validity_days }} days · {{ t.term_periods }} billing periods</p></div>
+  <a class="btn primary" href="{{ url_for('subs.new', template=t.id) }}">Use for a new subscription</a></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Product</th><th>Variant</th><th class="num">Quantity</th><th></th></tr></thead>
+  <tbody>{% for l in lines %}<tr><td>{{ l.product_name }}</td><td>{{ (l.attribute ~ ': ' ~ l.variant_value) if l.variant_value else '-' }}</td>
+    <td class="num">{{ l.quantity }}</td>
+    <td class="num">{% if current_user.role == 'admin' %}<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="remove">
+      <input type="hidden" name="line_id" value="{{ l.id }}"><button class="btn small danger">Remove</button></form>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% if current_user.role == 'admin' %}
+<form method="post" class="form-grid" style="padding:16px">{{ m.csrf() }}
+  <div class="field"><label for="product_id">Product</label><select id="product_id" name="product_id" required><option value="">Choose</option>
+    {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="variant_id">Variant</label><select id="variant_id" name="variant_id" data-variants-for="product_id"><option value="">None</option>
+    {% for v in variants %}<option value="{{ v.id }}" data-product="{{ v.product_id }}">{{ v.attribute }}: {{ v.value }} (+{{ v.extra_price|money }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="quantity">Quantity</label><input id="quantity" name="quantity" type="number" min="1" value="1" required></div>
+  <div><button class="btn">Add line</button></div></form>
+{% endif %}
+</div>
+{% endblock %}

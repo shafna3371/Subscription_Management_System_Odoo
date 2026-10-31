@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}My subscriptions{% endblock %}
+{% block content %}
+{% macro act(sub_id, name, label, cls='', confirm=None) -%}
+<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="sub_id" value="{{ sub_id }}"><input type="hidden" name="action" value="{{ name }}">
+  <button class="btn small {{ cls }}" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>{{ label }}</button></form>
+{%- endmacro %}
+<div class="page-head"><div><h1>Hello, {{ current_user.name.split()[0] }}</h1>
+  <p>{% if owed > 0 %}You have {{ owed|money }} to pay across open invoices.{% else %}You're all paid up.{% endif %}</p></div></div>
+{% for s in subs %}
+<div class="panel">
+  <div class="actions" style="justify-content:space-between">
+    <div><h2 style="margin:0">{{ s.plan_name }} {{ m.status(s.status) }}</h2>
+      <p class="small muted" style="margin:0">{{ s.number }} · {{ s.value|money }} per {{ {'daily':'day','weekly':'week','monthly':'month','yearly':'year'}[s.billing_period] }} before tax · started {{ s.start_date }}{% if s.expiry_date %} · ends {{ s.expiry_date }}{% endif %}</p></div>
+    <div class="actions">
+      {% if s.status == 'quotation' %}{% if s.quote_valid_until and s.quote_valid_until >= today.isoformat() %}{{ act(s.id, 'accept', 'Accept quotation', 'primary') }}<span class="small muted">Valid until {{ s.quote_valid_until }}</span>{% else %}<span class="small muted">This quotation expired. Ask us for a new one.</span>{% endif %}{% endif %}
+      {% if s.status == 'active' and s.pausable %}{{ act(s.id, 'pause', 'Pause') }}{% endif %}
+      {% if s.status == 'paused' %}{% if s.paused_reason == 'unpaid invoices' %}<span class="small muted">Paused until overdue invoices are paid</span>{% else %}{{ act(s.id, 'resume', 'Resume', 'primary') }}{% endif %}{% endif %}
+      {% if s.status in ('active','paused') and s.closable %}{{ act(s.id, 'close', 'Close', 'danger', 'Close this subscription? Billing stops and it cannot be reopened.') }}{% endif %}
+    </div></div>
+  <div class="table-wrap" style="margin-top:10px"><table class="small"><tbody>
+    {% for l in lines[s.id] %}<tr><td>{{ l.product_name }}{% if l.variant_value %} ({{ l.attribute }}: {{ l.variant_value }}){% endif %}</td><td class="num">{{ l.quantity }} × {{ l.unit_price|money }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% else %}<div class="panel empty">You have no subscriptions yet. Our team will send you a quotation.</div>{% endfor %}
+<div class="panel panel-flush"><h2>Invoices</h2><div class="table-wrap"><table>
+  <thead><tr><th>Invoice</th><th>Date</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">To pay</th><th></th></tr></thead>
+  <tbody>{% for i in invoices %}<tr><td>{{ i.number }}</td><td class="small">{{ i.invoice_date }}</td><td class="small">{{ i.due_date }}</td>
+    <td>{{ m.status(i.status, i.due_date, today.isoformat()) }}</td><td class="num">{{ i.total|money }}</td>
+    <td class="num">{{ (i.total - i.amount_paid)|money if i.status == 'confirmed' else '-' }}</td>
+    <td><a class="btn small" href="{{ url_for('portal.print_invoice', inv_id=i.id) }}" target="_blank" rel="noopener">View / print</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No invoices yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

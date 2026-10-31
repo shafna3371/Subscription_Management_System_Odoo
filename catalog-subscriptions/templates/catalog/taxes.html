@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Taxes{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Taxes</h1><p>Invoices calculate tax from these rules, using each product's assigned tax.</p></div></div>
+<div class="grid-2">
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th class="num">Rate</th><th class="num">Products using it</th></tr></thead>
+  <tbody>{% for t in taxes %}<tr><td>{{ t.name }}</td><td class="num">{{ t.rate|round(2) }}%</td><td class="num">{{ t.used }}</td></tr>
+  {% else %}<tr><td colspan="3" class="empty">No tax rules yet. Add your first one.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+<div class="panel"><h2>Add a tax rule</h2>
+  <form method="post" class="form-grid">{{ m.csrf() }}
+    <div class="field"><label for="name">Name</label><input id="name" name="name" required maxlength="60" placeholder="GST 18%"></div>
+    <div class="field"><label for="rate">Rate (%)</label><input id="rate" name="rate" type="number" min="0" max="100" step="0.01" required></div>
+    <div><button class="btn primary">Add tax rule</button></div>
+  </form></div>
+</div>
+{% endblock %}

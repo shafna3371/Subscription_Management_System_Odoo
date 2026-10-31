@@ -1,0 +1,12 @@
+<div class="field"><label for="name">Plan name</label><input id="name" name="name" required maxlength="80" value="{{ plan.name if plan else form.get('name','') }}"></div>
+<div class="field"><label for="product_id">Main product</label><select id="product_id" name="product_id" required><option value="">Choose a product</option>
+  {% for p in products %}<option value="{{ p.id }}" {% if plan and plan.product_id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></div>
+<div class="field"><label for="price">Price per unit, per period</label><input id="price" name="price" type="number" min="0" step="0.01" required value="{{ plan.price if plan else form.get('price','') }}"></div>
+<div class="field"><label for="billing_period">Bills every</label><select id="billing_period" name="billing_period">
+  {% for p in periods %}<option value="{{ p }}" {% if (plan and plan.billing_period == p) or (not plan and p == 'monthly') %}selected{% endif %}>{{ {'daily':'Day','weekly':'Week','monthly':'Month','yearly':'Year'}[p] }}</option>{% endfor %}</select></div>
+<div class="field"><label for="min_qty">Minimum quantity</label><input id="min_qty" name="min_qty" type="number" min="1" step="1" required value="{{ plan.min_qty if plan else 1 }}"></div>
+<div class="field"><label for="start_date">Available from</label><input id="start_date" name="start_date" type="date" required value="{{ plan.start_date if plan else today }}"></div>
+<div class="field"><label for="end_date">Available until</label><input id="end_date" name="end_date" type="date" value="{{ plan.end_date if plan and plan.end_date else '' }}"><div class="hint">Leave empty to keep it on sale.</div></div>
+<div class="field" style="grid-column: 1 / -1"><label>Plan rules</label><div class="checks">
+  {% for key, label in [('auto_close','Closes on its own at the end date'),('closable','Can be closed early'),('pausable','Can be paused'),('renewable','Can be renewed')] %}
+  <label><input type="checkbox" name="{{ key }}" value="1" {% if (plan and plan[key]) or (not plan and key != 'auto_close') %}checked{% endif %}> {{ label }}</label>{% endfor %}</div></div>

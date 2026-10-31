@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ p.name }}</h1><p>{{ p.type|capitalize }} · sells for {{ p.sales_price|money }} · margin {{ (p.sales_price - p.cost_price)|money }}</p></div>
+  <a class="btn" href="{{ url_for('catalog.products') }}">All products</a></div>
+<div class="grid-2">
+<div class="panel"><h2>Details</h2>
+  {% set form = {} %}
+  <form method="post" class="form-grid">{{ m.csrf() }}{% include "catalog/_product_fields.html" %}
+    {% if current_user.role == 'admin' %}<div><button class="btn primary">Save product</button></div>{% endif %}</form></div>
+<div class="panel panel-flush"><h2>Variants</h2><div class="table-wrap"><table>
+  <thead><tr><th>Attribute</th><th>Value</th><th class="num">Extra price</th><th class="num">Final price</th></tr></thead>
+  <tbody>{% for v in variants %}<tr><td>{{ v.attribute }}</td><td>{{ v.value }}</td><td class="num">+{{ v.extra_price|money }}</td>
+    <td class="num">{{ (p.sales_price + v.extra_price)|money }}</td></tr>
+  {% else %}<tr><td colspan="4" class="empty">No variants. Add one if this product comes in options, like a brand.</td></tr>{% endfor %}</tbody>
+</table></div>
+  {% if current_user.role == 'admin' %}
+  <form method="post" class="form-grid" style="padding:16px">{{ m.csrf() }}<input type="hidden" name="action" value="variant">
+    <div class="field"><label for="attribute">Attribute</label><input id="attribute" name="attribute" required placeholder="Brand"></div>
+    <div class="field"><label for="value">Value</label><input id="value" name="value" required placeholder="Odoo"></div>
+    <div class="field"><label for="extra_price">Extra price</label><input id="extra_price" name="extra_price" type="number" min="0" step="0.01" required placeholder="560"></div>
+    <div><button class="btn">Add variant</button></div></form>
+  {% endif %}
+</div></div>
+{% endblock %}

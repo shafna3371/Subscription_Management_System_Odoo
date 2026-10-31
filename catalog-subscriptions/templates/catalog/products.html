@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Products</h1><p>Everything Brightloop sells. Variants add to the base price.</p></div></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Type</th><th class="num">Sales price</th><th class="num">Cost price</th><th>Tax</th><th class="num">Variants</th></tr></thead>
+  <tbody>{% for p in products %}<tr><td><a href="{{ url_for('catalog.product', product_id=p.id) }}">{{ p.name }}</a></td>
+    <td>{{ p.type|capitalize }}</td><td class="num">{{ p.sales_price|money }}</td><td class="num">{{ p.cost_price|money }}</td>
+    <td>{{ p.tax_name or 'None' }}</td><td class="num">{{ p.variants }}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">No products yet.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% if current_user.role == 'admin' %}
+<div class="panel"><h2>Add a product</h2>
+  {% set p = None %}
+  <form method="post" class="form-grid">{{ m.csrf() }}{% include "catalog/_product_fields.html" %}
+    <div><button class="btn primary">Add product</button></div></form></div>
+{% endif %}
+{% endblock %}

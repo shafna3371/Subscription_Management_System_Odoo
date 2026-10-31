@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Subscriptions{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Subscriptions</h1><p>{{ '{:,}'.format(total) }} matching. Each moves Draft, Quotation, Confirmed, Active, Closed.</p></div>
+  <a class="btn primary" href="{{ url_for('subs.new') }}">New subscription</a></div>
+<form class="filters" method="get">
+  <input type="search" name="q" value="{{ args.get('q','') }}" placeholder="Number, customer or company" aria-label="Search">
+  <select name="status" aria-label="Status"><option value="">All statuses</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if args.get('status') == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}</select>
+  <select name="plan" aria-label="Plan"><option value="">All plans</option>
+    {% for p in plans %}<option value="{{ p.id }}" {% if args.get('plan') == p.id|string %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+  <label class="small"><input type="checkbox" name="risk" value="1" {% if args.get('risk') %}checked{% endif %} style="width:auto;min-height:auto"> At risk only</label>
+  <button class="btn">Filter</button>{% if args %}<a href="{{ url_for('subs.index') }}" class="small">Clear</a>{% endif %}
+</form>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Number</th><th>Customer</th><th>Plan</th><th>Status</th><th>Start</th><th>Expiry</th><th class="num">Per period</th><th>Churn risk</th></tr></thead>
+  <tbody>{% for s in rows %}<tr>
+    <td><a href="{{ url_for('subs.detail', sub_id=s.id) }}">{{ s.number }}</a></td>
+    <td>{{ s.customer_name }}<div class="small muted">{{ s.company or '' }}</div></td>
+    <td>{{ s.plan_name }}</td><td>{{ m.status(s.status) }}</td><td class="small">{{ s.start_date }}</td><td class="small">{{ s.expiry_date or '-' }}</td>
+    <td class="num">{{ s.value|money }}</td><td>{{ m.risk(s.risk) }}</td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No subscriptions match. Clear the filters or create one.</td></tr>{% endfor %}</tbody>
+</table></div>{{ m.pager(page, pages, 'subs.index', args) }}</div>
+{% endblock %}

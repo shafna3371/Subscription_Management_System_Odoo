@@ -1,0 +1,83 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}{{ sub.number }}{% endblock %}
+{% block content %}
+{% macro act(name, label, cls='', confirm=None) -%}
+<form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="{{ name }}">
+  <button class="btn {{ cls }}" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>{{ label }}</button></form>
+{%- endmacro %}
+<div class="page-head">
+  <div><h1>{{ sub.number }} {{ m.status(sub.status) }}</h1>
+    <p>{{ sub.customer_name }} · {{ sub.plan_name }} · {{ value|money }} per {{ {'daily':'day','weekly':'week','monthly':'month','yearly':'year'}[sub.billing_period] }} · MRR {{ mrr|money }}</p></div>
+  <div class="actions">
+    {% if sub.status in ('draft','quotation') %}{{ act('send_quote', 'Send quotation' if sub.status == 'draft' else 'Resend quotation') }}{{ act('confirm', 'Confirm', 'primary') }}{% endif %}
+    {% if sub.status == 'active' %}{{ act('bill_now', 'Run billing now') }}{% if plan.pausable %}{{ act('pause', 'Pause') }}{% endif %}{% if plan.renewable and sub.expiry_date %}{{ act('renew', 'Renew') }}{% endif %}{% endif %}
+    {% if sub.status == 'paused' %}{{ act('resume', 'Resume', 'primary') }}{% endif %}
+    {% if sub.status in ('draft','quotation','confirmed') or (sub.status in ('active','paused') and plan.closable) %}{{ act('close', 'Close', 'danger', 'Close this subscription? It stops billing and cannot be reopened.') }}{% endif %}
+  </div>
+</div>
+
+<div class="grid-3">
+<div>
+  <div class="panel panel-flush"><h2>Order lines</h2><div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Tax</th><th class="num">Amount</th>{% if editable %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for l in lines %}<tr>
+      <td>{{ l.product_name }}{% if l.variant_value %}<div class="small muted">{{ l.attribute }}: {{ l.variant_value }}</div>{% endif %}</td>
+      <td class="num">{% if editable %}<form method="post" class="inline actions" style="justify-content:flex-end">{{ m.csrf() }}<input type="hidden" name="action" value="set_qty">
+        <input type="hidden" name="line_id" value="{{ l.id }}"><input name="quantity" type="number" min="1" value="{{ l.quantity }}" style="width:80px" aria-label="Quantity">
+        <button class="btn small">Save</button></form>{% else %}{{ l.quantity }}{% endif %}</td>
+      <td class="num">{{ l.unit_price|money }}</td><td class="num">{{ l.tax_rate|round(2) }}%</td>
+      <td class="num">{{ (l.quantity * l.unit_price)|money }}</td>
+      {% if editable %}<td class="num"><form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="remove_line">
+        <input type="hidden" name="line_id" value="{{ l.id }}"><button class="btn small danger" data-confirm="Remove this line?">Remove</button></form></td>{% endif %}</tr>{% endfor %}</tbody>
+    <tfoot><tr><td colspan="4">Before tax and discounts</td><td class="num">{{ value|money }}</td>{% if editable %}<td></td>{% endif %}</tr></tfoot>
+  </table></div>
+  {% if editable %}
+  <form method="post" class="form-grid" style="padding:16px">{{ m.csrf() }}<input type="hidden" name="action" value="add_line">
+    <div class="field"><label for="product_id">Add product</label><select id="product_id" name="product_id" required><option value="">Choose</option>
+      {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="variant_id">Variant</label><select id="variant_id" name="variant_id" data-variants-for="product_id"><option value="">None</option>
+      {% for v in variants %}<option value="{{ v.id }}" data-product="{{ v.product_id }}">{{ v.attribute }}: {{ v.value }} (+{{ v.extra_price|money }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="quantity">Quantity</label><input id="quantity" name="quantity" type="number" min="1" value="1" required></div>
+    <div><button class="btn">Add line</button></div></form>
+  {% endif %}</div>
+
+  <div class="panel panel-flush"><h2>Invoices</h2><div class="table-wrap"><table>
+    <thead><tr><th>Number</th><th>Period</th><th>Due</th><th>Status</th><th class="num">Total</th></tr></thead>
+    <tbody>{% for i in invoices %}<tr><td><a href="{{ url_for('finance.invoice', inv_id=i.id) }}">{{ i.number }}</a></td>
+      <td class="small">{{ i.period_start }} to {{ i.period_end }}</td><td class="small">{{ i.due_date }}</td>
+      <td>{{ m.status(i.status, i.due_date, today.isoformat()) }}{% if i.anomaly_flag %} <span class="badge risk">Needs review</span>{% endif %}</td>
+      <td class="num">{{ i.total|money }}</td></tr>
+    {% else %}<tr><td colspan="5" class="empty">No invoices yet. They are created automatically on each billing date.</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+
+<div>
+  <div class="panel"><h2>Terms</h2>
+    <table class="small"><tbody>
+      <tr><td class="muted">Customer</td><td>{{ sub.customer_name }}<br><span class="muted">{{ sub.customer_email }}</span></td></tr>
+      <tr><td class="muted">Start</td><td>{{ sub.start_date }}</td></tr>
+      <tr><td class="muted">Expiry</td><td>{{ sub.expiry_date or 'Runs until closed' }}{% if sub.auto_renew %} · renews automatically{% endif %}</td></tr>
+      <tr><td class="muted">Next billing</td><td>{{ sub.next_billing_date or '-' }}</td></tr>
+      <tr><td class="muted">Payment terms</td><td>{{ 'Due on receipt' if sub.payment_terms_days == 0 else sub.payment_terms_days ~ ' days' }}</td></tr>
+      {% if sub.quote_valid_until %}<tr><td class="muted">Quotation valid until</td><td>{{ sub.quote_valid_until }}</td></tr>{% endif %}
+      {% if sub.paused_reason %}<tr><td class="muted">Paused because</td><td>{{ sub.paused_reason }}</td></tr>{% endif %}
+    </tbody></table></div>
+
+  {% if risk %}
+  <div class="panel"><h2>Churn risk {{ m.risk(risk.score) }}</h2>
+    {% for r in from_json(risk.reasons) %}<span class="reason">{{ r }}</span>{% else %}<p class="muted small">No warning signs.</p>{% endfor %}
+    {% if risk.score >= 0.5 and offers %}
+    <form method="post" class="actions" style="margin-top:12px">{{ m.csrf() }}<input type="hidden" name="action" value="apply_offer">
+      <select name="discount_id" aria-label="Retention offer" style="width:auto">{% for o in offers %}<option value="{{ o.id }}">{{ o.name }}</option>{% endfor %}</select>
+      <button class="btn primary">Apply retention offer</button></form>
+    <p class="small muted" style="margin-top:6px">Revenue at stake this year: {{ (risk.score * mrr * 12)|money }}</p>
+    {% endif %}</div>
+  {% endif %}
+  {% if assigned %}<div class="panel"><h2>Offers applied</h2>{% for a in assigned %}<span class="reason calm">{{ a.name }}</span>{% endfor %}</div>{% endif %}
+
+  <div class="panel"><h2>Activity</h2><ul class="timeline">
+    {% for a in activity %}<li><time>{{ a.at }}</time>{{ a.message }} <span class="muted small">· {{ a.actor }}</span></li>{% else %}<li class="muted">Nothing yet.</li>{% endfor %}
+  </ul></div>
+</div>
+</div>
+{% endblock %}

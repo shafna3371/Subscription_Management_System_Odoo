@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}{{ plan.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ plan.name }}</h1><p>Changes apply to new subscriptions. Existing ones keep their prices.</p></div>
+  <a class="btn" href="{{ url_for('catalog.plans') }}">All plans</a></div>
+<div class="panel">{% set form = {} %}
+  <form method="post" class="form-grid">{{ m.csrf() }}{% include "catalog/_plan_fields.html" %}
+    <div><button class="btn primary">Save plan</button></div></form></div>
+{% endblock %}
