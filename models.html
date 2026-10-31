@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Models{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Models</h1><p>Small scikit-learn models that run offline. Trained on the history in this database, including simulated customers.</p></div>
+  <form method="post">{{ m.csrf() }}<button class="btn primary">Retrain and re-score now</button></form></div>
+<div class="panel panel-flush"><div class="table-wrap"><table>
+  <thead><tr><th>Model</th><th>Quality</th><th class="num">Training rows</th><th>Features it looks at</th><th>Last trained</th></tr></thead>
+  <tbody>{% for c in cards %}<tr><td><strong>{{ c.name }}</strong></td><td>{{ c.metric }}</td><td class="num">{{ '{:,}'.format(c.n_samples or 0) }}</td>
+    <td>{% for f in from_json(c.features) %}<span class="reason calm">{{ f }}</span>{% endfor %}</td><td class="small">{{ c.trained_at }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">No models trained yet. Seed some history, then retrain.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+<div class="panel"><h2>How to read these</h2>
+  <p>AUC measures how well a model ranks risky items above safe ones: 0.5 is a coin toss, 1.0 is perfect. Each model is tested on the newest 25% of data it never trained on.</p>
+  <p>Every score on screen lists its reasons. They come from each feature's contribution to the logistic regression (its weight times the customer's value), so staff can check the logic instead of trusting a black box.</p>
+  <p class="muted" style="margin:0">The demo data comes from simulated customers. With real Brightloop history, press Retrain and the same code learns from it.</p></div>
+{% endblock %}

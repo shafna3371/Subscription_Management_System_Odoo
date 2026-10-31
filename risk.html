@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Customers at risk{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Customers at risk</h1><p>Sorted by revenue at stake. Every score shows the reasons behind it.</p></div>
+  <a class="btn" href="{{ url_for('insights.models') }}">How the models work</a></div>
+<div class="panel panel-flush"><h2>Likely to cancel in the next 90 days</h2><div class="table-wrap"><table>
+  <thead><tr><th>Subscription</th><th>Plan</th><th>Risk</th><th>Why</th><th class="num">MRR</th><th class="num">At stake / year</th></tr></thead>
+  <tbody>{% for r in rows %}{% set mrr = from_json(r.extra).mrr %}<tr>
+    <td><a href="{{ url_for('subs.detail', sub_id=r.id) }}">{{ r.number }}</a><div class="small muted">{{ r.customer_name }}</div></td>
+    <td>{{ r.plan_name }} {{ m.status(r.status) }}</td><td>{{ m.risk(r.score) }}</td>
+    <td>{% for why in from_json(r.reasons) %}<span class="reason">{{ why }}</span>{% endfor %}</td>
+    <td class="num">{{ mrr|money }}</td><td class="num">{{ (mrr * 12 * r.score)|money }}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">No subscriptions above 40% risk.</td></tr>{% endfor %}</tbody>
+</table></div>{% if offers %}<p class="small muted" style="padding:12px 16px;margin:0">Open a subscription to apply a retention offer: {{ offers|map(attribute='name')|join(', ') }}.</p>{% endif %}</div>
+<div class="panel panel-flush"><h2>Invoices likely to be paid late</h2><div class="table-wrap"><table>
+  <thead><tr><th>Invoice</th><th>Due</th><th>Risk</th><th>Why</th><th>Expected payment</th></tr></thead>
+  <tbody>{% for r in late %}{% set x = from_json(r.extra) %}<tr><td><a href="{{ url_for('finance.invoice', inv_id=r.id) }}">{{ r.number }}</a><div class="small muted">{{ r.customer_name }}</div></td>
+    <td class="small">{{ r.due_date }}</td><td>{{ m.risk(r.score) }}</td><td>{% for why in from_json(r.reasons) %}<span class="reason calm">{{ why }}</span>{% endfor %}</td>
+    <td class="small">{{ x.expected_date }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">No open invoices look likely to be late.</td></tr>{% endfor %}</tbody>
+</table></div><p class="small muted" style="padding:12px 16px;margin:0">These customers get a friendly reminder 3 days before the due date.</p></div>
+{% endblock %}

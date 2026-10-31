@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Time Machine{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Time Machine</h1><p>Move the business date forward and watch a billing month happen: invoices, discounts, payments, reminders and renewals.</p></div></div>
+<div class="grid-2">
+<div class="panel"><h2>Move forward</h2>
+  <p class="small muted">{{ stats.due_today }} subscriptions are due for billing today · {{ '{:,}'.format(stats.invoices) }} invoices so far.</p>
+  <div class="actions">{% for days, label in [(1,'1 day'),(7,'1 week'),(30,'1 month')] %}
+    <form method="post" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="advance"><input type="hidden" name="days" value="{{ days }}">
+      <button class="btn {{ 'primary' if days == 7 else '' }}">+ {{ label }}</button></form>{% endfor %}</div>
+  <form method="post" class="actions" style="margin-top:16px">{{ m.csrf() }}<input type="hidden" name="action" value="toggle_sim">
+    <span class="small">Simulated customers {{ 'pay, grow and cancel by themselves' if stats.simulate else 'are frozen' }}.</span>
+    <button class="btn small">{{ 'Freeze them' if stats.simulate else 'Let them act' }}</button></form></div>
+<div class="panel"><h2>Prove billing is safe</h2>
+  <div class="actions" style="flex-direction:column;align-items:stretch">
+    <form method="post">{{ m.csrf() }}<input type="hidden" name="action" value="rerun"><button class="btn" style="width:100%">Run billing 3 times in a row</button></form>
+    <form method="post">{{ m.csrf() }}<input type="hidden" name="action" value="crash"><button class="btn" style="width:100%">Simulate a crash and re-run billing</button></form>
+    <form method="post" class="actions">{{ m.csrf() }}<input type="hidden" name="action" value="outage">
+      <input name="days" type="number" min="1" max="60" value="5" style="width:80px" aria-label="Outage days">
+      <button class="btn" style="flex:1">Simulate server downtime (days), then catch up</button></form></div>
+  <p class="small muted" style="margin:12px 0 0">The database refuses a second invoice for the same subscription and period, so these always end with zero duplicates.</p></div>
+</div>
+{% endblock %}

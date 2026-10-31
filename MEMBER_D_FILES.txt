@@ -1,0 +1,18 @@
+Member D: Dashboard, metrics, ML models, simulation, seed data, Time Machine, tests
+
+Unzip this into the ROOT of your cloned repository (it already contains the folders).
+
+Your files (13):
+  MODULE_GUIDE.md
+  loopline/metrics.py
+  loopline/ml.py
+  loopline/seed.py
+  loopline/simulation.py
+  loopline/views/insights.py
+  templates/insights/_mail_body.html
+  templates/insights/dashboard.html
+  templates/insights/mailbox.html
+  templates/insights/models.html
+  templates/insights/risk.html
+  templates/insights/time_machine.html
+  tests/test_loopline.py

@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Revenue at a glance</h1><p>Recurring revenue, what came in, what is owed and who might leave.</p></div></div>
+<div class="kpis">
+  <a class="kpi" href="{{ url_for('subs.index', status='active') }}"><span>Active subscriptions</span><b>{{ '{:,}'.format(k.active) }}</b></a>
+  <div class="kpi"><span>MRR</span><b>{{ k.mrr|money }}</b><small>ARR {{ k.arr|money }}</small></div>
+  <a class="kpi" href="{{ url_for('finance.payments') }}"><span>Collected this month</span><b>{{ k.collected|money }}</b></a>
+  <a class="kpi" href="{{ url_for('finance.invoices', status='outstanding') }}"><span>Still owed</span><b>{{ k.owed|money }}</b><small>{{ k.owed_count }} invoices</small></a>
+  <a class="kpi bad" href="{{ url_for('finance.invoices', status='overdue') }}"><span>Overdue</span><b>{{ k.overdue|money }}</b><small>{{ k.overdue_count }} invoices</small></a>
+  <a class="kpi" href="{{ url_for('finance.review') }}"><span>Held for review</span><b>{{ k.review }}</b></a>
+</div>
+<div class="grid-2">
+  <div class="panel"><h2>MRR, last 12 months</h2>{{ trend_svg }}</div>
+  <div class="panel"><div class="actions" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Where MRR moved</h2>
+    <form method="get"><select name="month" onchange="this.form.submit()" aria-label="Month" style="width:auto">
+      {% for mo in months %}<option value="{{ mo.isoformat() }}" {% if mo == month %}selected{% endif %}>{{ mo.strftime('%B %Y') }}</option>{% endfor %}</select>
+      <noscript><button class="btn small">Show</button></noscript></form></div>
+    {{ wf_svg }}
+    <p class="small muted" style="margin:6px 0 0">Net new MRR {{ wf.net_new|money }} · net revenue retention {{ wf.nrr|pct }}</p></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><h2>Unpaid invoices by age</h2>{{ aging_html }}</div>
+  <div class="panel"><h2>Expected cash in</h2>
+    {% if has_forecast %}{{ forecast_html }}<p class="small muted" style="margin:8px 0 0">From open invoices, using each one's predicted payment date.</p>
+    {% else %}<p class="muted">Train the models to see a forecast.</p>{% endif %}</div>
+</div>
+<div class="grid-2">
+  <div class="panel panel-flush"><h2>Overdue, oldest first</h2><div class="table-wrap"><table><tbody>
+    {% for i in overdue %}<tr><td><a href="{{ url_for('finance.invoice', inv_id=i.id) }}">{{ i.number }}</a><div class="small muted">{{ i.customer_name }}</div></td>
+      <td class="small">due {{ i.due_date }}</td><td class="num">{{ i.owed|money }}</td></tr>
+    {% else %}<tr><td class="empty">Nothing is overdue.</td></tr>{% endfor %}</tbody></table></div></div>
+  <div class="panel panel-flush"><h2>Most revenue at risk</h2><div class="table-wrap"><table><tbody>
+    {% for r in at_risk %}<tr><td><a href="{{ url_for('subs.detail', sub_id=r.id) }}">{{ r.number }}</a><div class="small muted">{{ r.customer_name }}</div></td>
+      <td>{% for why in from_json(r.reasons)[:2] %}<span class="reason">{{ why }}</span>{% endfor %}</td><td>{{ m.risk(r.score) }}</td></tr>
+    {% else %}<tr><td class="empty">No high-risk subscriptions right now.</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+<div class="page-head"><div><h1>{{ 'Emails to ' ~ who if who else 'Email outbox' }}</h1><p>Offline stand-in for a real mail server: every email the system sends lands here.</p></div></div>
+{% if not current_user %}<form class="filters" method="get"><input type="email" name="to" value="{{ who }}" placeholder="Your email" aria-label="Email"><button class="btn">Show my emails</button>
+  <a href="{{ url_for('auth.login') }}" class="small">Back to log in</a></form>{% endif %}
+{% for e in rows %}<div class="panel"><h3>{{ e.subject }}</h3><p class="small muted">To {{ e.to_email }} · {{ e.created_at }}</p>
+  <div style="white-space:pre-wrap;font-size:0.9rem">{{ e.body|urlize(80, true) }}</div></div>
+{% else %}<div class="panel empty">No emails yet.</div>{% endfor %}
